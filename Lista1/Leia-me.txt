@@ -1,0 +1,45 @@
+Bom dia Professora 
+Desculpa o atraso na entrega tive alguns problemas em entender certas coisas inicialmente,
+ mas pedi ajada para o colega Erick e ele me ajudou muito então aqui estão os exercicios
+
+Exercício 6:
+b2Body* createBox( )
+b2Body* createCircle( )
+b2Body* createEdge( )
+void Keyboard( )
+
+
+Exercício 7
+Este eu fiz duas versões:
+1ª MyTest() Linhas 18 a 43
+2ª MyTest() Linhas 48 a 60
+
+
+Exercício 8
+void Keyboard( )
+
+
+Exercício 9
+atalho V
+void Keyboard( )
+
+
+Exercício 10
+atalho G
+void Keyboard( )
+
+
+Exercício 11
+atalho H
+void Keyboard( )
+
+
+Exercício 12
+atalho J
+void Keyboard( )
+
+
+Exercício 13
+atalho K
+b2Body* createDiamond( )
+void Keyboard( )
