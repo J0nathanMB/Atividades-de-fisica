@@ -1,6 +1,5 @@
 Bom dia Professora 
-Desculpa o atraso na entrega tive alguns problemas em entender certas coisas inicialmente,
- mas pedi ajada para o colega Erick e ele me ajudou muito então aqui estão os exercicios
+Versão nova agora com a  lista 2
 
 Exercício 6:
 b2Body* createBox( )

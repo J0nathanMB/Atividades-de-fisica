@@ -3,6 +3,13 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+b2Vec2 decomposeVector(float angleDeg, float magnitude);
+float degToRad(float angleDeg);
 
 class MyTest : public Test //você cria a sua classe derivada da classe base Test
 {
@@ -11,6 +18,17 @@ private:
 	float restitutionCount = 0;
 	float frictionCount = 0;
 	bool rampaCriada = false;
+
+	bool dominoCriado = false;
+	b2Body* primeiroDomino = NULL;
+	b2Vec2 globalPointDomino;
+	
+	float globalForce = 300, globalAngle = 45;
+
+	bool setupPlayer = false;
+	b2Body* player;
+	
+
 
 public:
 	MyTest() {
@@ -71,6 +89,14 @@ public:
 		//show some text in the main screen
 		g_debugDraw.DrawString(5, m_textLine, "Este e' um template para os exercicios!! :)");
 		m_textLine += 15;
+
+		string message = "Angle = " + to_string(int(globalAngle));
+		g_debugDraw.DrawString(5, m_textLine, message.c_str());
+		m_textLine += 15;
+
+		message = "Force = " + to_string(int(globalForce));
+		g_debugDraw.DrawString(5, m_textLine, message.c_str());
+		m_textLine += 15;
 	}
 
 	static Test* Create()  //a classe Test que instancia um objeto da sua nova classe
@@ -81,20 +107,20 @@ public:
 	}
 
 	// EXERCÍCIO 6 - Cubo
-	b2Body* createBox(b2Vec2 pos, b2Vec2 dim, b2Vec2 lvel, float grav, float density, float friction, float restitution, bool isDynamic)
+	b2Body* createBox(b2Vec2 pos, b2Vec2 dim, b2Vec2 linearVelocity, float grav, float density, float friction, float restitution, bool isDynamic)
 	{
 		b2BodyDef bodyDef;
-		bodyDef.linearVelocity.Set(lvel.x, lvel.y);
+		bodyDef.linearVelocity.Set(linearVelocity.x, linearVelocity.y);
 		bodyDef.gravityScale = grav;
 
 		if (isDynamic)	bodyDef.type = b2_dynamicBody;
 		else			bodyDef.type = b2_staticBody;
 
-		bodyDef.position.Set(pos.x,pos.y);
+		bodyDef.position.Set(pos.x, pos.y);
 		b2Body* body = m_world->CreateBody(&bodyDef);
 
 		b2PolygonShape dynamicBox;
-		dynamicBox.SetAsBox(dim.x,dim.y);
+		dynamicBox.SetAsBox(dim.x, dim.y);
 		b2FixtureDef fixtureDef;
 		fixtureDef.shape = &dynamicBox;
 		fixtureDef.density = density;
@@ -104,11 +130,12 @@ public:
 		return body;
 	}
 
+
 	// EXERCÍCIO 6 - Círculo
-	b2Body* createCircle(b2Vec2 pos, float radius, b2Vec2 lvel, float grav, float density, float friction, float restitution, bool isDynamic)
+	b2Body* createCircle(b2Vec2 pos, float radius, b2Vec2 linearVelocity, float grav, float density, float friction, float restitution, bool isDynamic)
 	{
 		b2BodyDef bodyDef;
-		bodyDef.linearVelocity.Set(lvel.x, lvel.y);
+		bodyDef.linearVelocity.Set(linearVelocity.x, linearVelocity.y);
 		bodyDef.gravityScale = grav;
 
 		if (isDynamic)	bodyDef.type = b2_dynamicBody;
@@ -154,8 +181,8 @@ public:
 		b2BodyDef bodyDef;
 		bodyDef.position.Set(posX, posY);
 		bodyDef.type = b2_dynamicBody;
-		b2PolygonShape* formas = new b2PolygonShape[8]; 
-		b2FixtureDef* partes = new b2FixtureDef[8]; 
+		b2PolygonShape* formas = new b2PolygonShape[8];
+		b2FixtureDef* partes = new b2FixtureDef[8];
 		//////////////////////////////////////////////
 		b2Vec2* c1 = new b2Vec2[3];
 		c1[0] = b2Vec2(1 * scaleFactor, 7 * scaleFactor);
@@ -266,7 +293,7 @@ public:
 	//exercíico 6 + 8 + 9
 	void Keyboard(int key) override
 	{
-		
+
 		switch (key)
 		{
 		case GLFW_KEY_B:
@@ -275,13 +302,13 @@ public:
 
 				b2Vec2* boxPos = new b2Vec2(rand() % 180 - 90, rand() % 80 - 40);
 				b2Vec2* boxDim = new b2Vec2(rand() % 10 + 1, rand() % 10 + 1);
-				b2Vec2* boxLVel = new b2Vec2(rand() % 360 + 1, rand() % 360 + 1);
+				b2Vec2* boxlinearVelocity = new b2Vec2(rand() % 360 + 1, rand() % 360 + 1);
 				float boxGravity = rand() % 40 - 20;
 				float boxDensity = rand() % 10 + 1;
 				float boxFriction = (rand() % 10 + 1) / 10;
 				float boxRestitution = (rand() % 10 + 1) / 10;
 				bool boxIsDynamic = true;
-				b2Body* box = createBox(*boxPos, *boxDim, *boxLVel, boxGravity, boxDensity, boxFriction, boxRestitution, boxIsDynamic);
+				b2Body* box = createBox(*boxPos, *boxDim, *boxlinearVelocity, boxGravity, boxDensity, boxFriction, boxRestitution, boxIsDynamic);
 			}
 			break;
 
@@ -290,14 +317,14 @@ public:
 				srand(time(NULL));
 				b2Vec2* circlePos = new b2Vec2(rand() % 180 - 90, rand() % 80 - 40);
 				float circleRadius = rand() % 10 + 1;
-				b2Vec2* circleLVel = new b2Vec2(rand() % 360 + 1, rand() % 360 + 1);
+				b2Vec2* circlelinearVelocity = new b2Vec2(rand() % 360 + 1, rand() % 360 + 1);
 				float circleGravity = rand() % 40 - 20;
 				float circleDensity = rand() % 10 + 1;
 				float circleFriction = (rand() % 10 + 1) / 10;
 				float circleRestitution = (rand() % 10 + 1) / 10;
 				bool circleIsDynamic = true;
 
-				b2Body* circle = createCircle(*circlePos, circleRadius, *circleLVel, circleGravity, circleDensity, circleFriction, circleRestitution, circleIsDynamic);
+				b2Body* circle = createCircle(*circlePos, circleRadius, *circlelinearVelocity, circleGravity, circleDensity, circleFriction, circleRestitution, circleIsDynamic);
 			}
 			break;
 
@@ -310,12 +337,12 @@ public:
 			}
 			break;
 
-		// Exercício 9
+			// Exercício 9
 		case GLFW_KEY_V:
 			if (key == GLFW_KEY_V) {
-				b2Vec2* boxPos = new b2Vec2(0,0);
-				b2Vec2* boxDim = new b2Vec2(1,1);
-				b2Vec2* boxLVel = new b2Vec2(0,0);
+				b2Vec2* boxPos = new b2Vec2(0, 0);
+				b2Vec2* boxDim = new b2Vec2(1, 1);
+				b2Vec2* boxlinearVelocity = new b2Vec2(0, 0);
 				float boxGravity = 1;
 				float boxDensity = 1;
 				float boxFriction = 1;
@@ -327,27 +354,27 @@ public:
 				//
 
 				if (restitutionCount < 1)
-				restitutionCount += 0.1f;
+					restitutionCount += 0.1f;
 
 				bool boxIsDynamic = true;
-				b2Body* box = createBox(*boxPos, *boxDim, *boxLVel, boxGravity, boxDensity, boxFriction, boxRestitution, boxIsDynamic);
+				b2Body* box = createBox(*boxPos, *boxDim, *boxlinearVelocity, boxGravity, boxDensity, boxFriction, boxRestitution, boxIsDynamic);
 			}
 			break;
 
-		// Exercício 10
+			// Exercício 10
 		case GLFW_KEY_G:
 			if (key == GLFW_KEY_G) {
 
 				if (!rampaCriada) {
-					b2Vec2* p1 = new b2Vec2(100,0);
-					b2Vec2* p2 = new b2Vec2(-100,-50);
+					b2Vec2* p1 = new b2Vec2(100, 0);
+					b2Vec2* p2 = new b2Vec2(-100, -50);
 					b2Body* edge = createEdge(*p1, *p2);
 					rampaCriada = true;
 				}
 
 				b2Vec2* boxPos = new b2Vec2(90, 3);
 				b2Vec2* boxDim = new b2Vec2(1, 1);
-				b2Vec2* boxLVel = new b2Vec2(0, 0);
+				b2Vec2* boxlinearVelocity = new b2Vec2(0, 0);
 				float boxGravity = 1;
 				float boxDensity = 1;
 				float boxFriction = frictionCount;
@@ -362,7 +389,7 @@ public:
 					frictionCount += 0.1f;
 
 				bool boxIsDynamic = true;
-				b2Body* box = createBox(*boxPos, *boxDim, *boxLVel, boxGravity, boxDensity, boxFriction, boxRestitution, boxIsDynamic);
+				b2Body* box = createBox(*boxPos, *boxDim, *boxlinearVelocity, boxGravity, boxDensity, boxFriction, boxRestitution, boxIsDynamic);
 			}
 			break;
 
@@ -370,26 +397,26 @@ public:
 			if (key == GLFW_KEY_H) {
 				for (size_t i = 1; i < 7; i++)
 				{
-					b2Vec2* boxPos = new b2Vec2(10, (i*4)-20);
+					b2Vec2* boxPos = new b2Vec2(10, (i * 4) - 20);
 					b2Vec2* boxDim = new b2Vec2(2.0f, 2.0f);
-					b2Vec2* boxLVel = new b2Vec2(0, 0);
+					b2Vec2* boxlinearVelocity = new b2Vec2(0, 0);
 					float boxGravity = 1;
 					float boxDensity = 1;
 					float boxFriction = 1;
 					float boxRestitution = 0;
 					bool boxIsDynamic = true;
-					b2Body* box = createBox(*boxPos, *boxDim, *boxLVel, boxGravity, boxDensity, boxFriction, boxRestitution, boxIsDynamic);
+					b2Body* box = createBox(*boxPos, *boxDim, *boxlinearVelocity, boxGravity, boxDensity, boxFriction, boxRestitution, boxIsDynamic);
 
 					b2Vec2* circlePos = new b2Vec2(-10, (i * 4));
 					float circleRadius = 2.0f;
-					b2Vec2* circleLVel = new b2Vec2(0,0);
+					b2Vec2* circlelinearVelocity = new b2Vec2(0, 0);
 					float circleGravity = 1;
 					float circleDensity = 1;
 					float circleFriction = 1;
 					float circleRestitution = 0;
 					bool circleIsDynamic = true;
 
-					b2Body* circle = createCircle(*circlePos, circleRadius, *circleLVel, circleGravity, circleDensity, circleFriction, circleRestitution, circleIsDynamic);
+					b2Body* circle = createCircle(*circlePos, circleRadius, *circlelinearVelocity, circleGravity, circleDensity, circleFriction, circleRestitution, circleIsDynamic);
 				}
 			}
 			break;
@@ -400,26 +427,26 @@ public:
 				{
 					for (int j = 1; j < 11; j++)
 					{
-						b2Vec2* boxPos = new b2Vec2((i * 2), (j * 2)-50);
+						b2Vec2* boxPos = new b2Vec2((i * 2), (j * 2) - 50);
 						b2Vec2* boxDim = new b2Vec2(1.0f, 1.0f);
-						b2Vec2* boxLVel = new b2Vec2(0, 0);
+						b2Vec2* boxlinearVelocity = new b2Vec2(0, 0);
 						float boxGravity = 1;
 						float boxDensity = 1;
 						float boxFriction = 1;
 						float boxRestitution = 0;
 						bool boxIsDynamic = false;
-						b2Body* box = createBox(*boxPos, *boxDim, *boxLVel, boxGravity, boxDensity, boxFriction, boxRestitution, boxIsDynamic);
+						b2Body* box = createBox(*boxPos, *boxDim, *boxlinearVelocity, boxGravity, boxDensity, boxFriction, boxRestitution, boxIsDynamic);
 
 					}
-					
-					
+
+
 				}
 			}
 			break;
 
 		case GLFW_KEY_K:
 			if (key == GLFW_KEY_K) {
-				
+
 				float x = 0;
 				float y = 0;
 				float scale = 1;
@@ -429,16 +456,166 @@ public:
 			}
 			break;
 
+			//LISTA 2 - EXERCÍCIO 1
+		case GLFW_KEY_Q:
+			if (key == GLFW_KEY_Q) {
+				if (!dominoCriado) {
+					for (size_t i = 0; i < 10; i++)
+					{
+						b2Vec2* boxPos = new b2Vec2((i * 7.5) - 40, -20);
+						b2Vec2* boxDim = new b2Vec2(1.5, 6.0);
+						b2Vec2* boxLinearVelocity = new b2Vec2(0, 0);
+						float boxGravity = 10;
+						float boxDensity = 1;
+						float boxFriction = 0.2;
+						float boxRestitution = 0;
 
-		
+						b2Body* box = createBox(*boxPos, *boxDim, *boxLinearVelocity, boxGravity, boxDensity, boxFriction, boxRestitution, true);
+
+						if (primeiroDomino == NULL) {
+							primeiroDomino = box;
+							globalPointDomino = *boxDim;
+							globalPointDomino.x = globalPointDomino.x * -1;
+						}
+
+					}
+					dominoCriado = true;
+				}
+				else {
+					b2Vec2 force = b2Vec2(2000.0, 0.0);
+					primeiroDomino->ApplyForce(force, globalPointDomino, true);
+				}
+			}
+			break;
+
+			//LISTA 2 - EXERCICIO 2 
+		case GLFW_KEY_E:
+			if (key == GLFW_KEY_E) {
+				b2Vec2* boxPos = new b2Vec2(-95, -45);
+				b2Vec2* boxDim = new b2Vec2(1, 1);
+				b2Vec2* boxlinearVelocity = new b2Vec2(0, 0);
+				float boxGravity = 10;
+				float boxDensity = 1;
+				float boxFriction = 1000;
+				float boxRestitution = 0;
+
+				b2Body* box = createBox(*boxPos, *boxDim, *boxlinearVelocity, boxGravity, boxDensity, boxFriction, boxRestitution, true);
+				
+				b2Vec2 force = decomposeVector(globalAngle, globalForce);
+
+				box->ApplyLinearImpulse(force, box->GetWorldCenter(), true);
+			}
+			break;
+
+		case GLFW_KEY_W:
+			if (key == GLFW_KEY_W) {
+				if (globalAngle < 90)
+					globalAngle++;
+				else
+					globalAngle = 90.0f;
+
+				std::cout << globalAngle << std::endl;
+			}
+			break;
+
+		case GLFW_KEY_S:
+			if (key == GLFW_KEY_S) {
+				if (globalAngle > 0)
+					globalAngle--;
+				else
+					globalAngle = 0.0f;
+
+				std::cout << globalAngle << std::endl;
+			}
+			break;
+
+		case GLFW_KEY_KP_ADD:
+			if (key == GLFW_KEY_KP_ADD) {
+				if (globalForce < 500)
+					globalForce += 10.0f;
+				else
+					globalForce = 500.0f;
+
+				std::cout << globalForce << std::endl;
+			}
+			break;
+
+		case GLFW_KEY_KP_SUBTRACT:
+			if (key == GLFW_KEY_KP_SUBTRACT) {
+				if (globalForce > 0)
+					globalForce -= 10.0f;
+				else
+					globalForce = 0.0f;
+
+				std::cout << globalForce << std::endl;
+			}
+			break;
+
+		case GLFW_KEY_KP_7:
+			if (key == GLFW_KEY_KP_7) {
+				b2Vec2* boxPos = new b2Vec2(0, -40);
+				b2Vec2* boxDim = new b2Vec2(2, 6);
+				b2Vec2* boxlinearVelocity = new b2Vec2(0, 0);
+				float boxGravity = 10;
+				float boxDensity = 1;
+				float boxFriction = 1;
+				float boxRestitution = 0;
+
+				player = createBox(*boxPos, *boxDim, *boxlinearVelocity, boxGravity, boxDensity, boxFriction, boxRestitution, true);
+				setupPlayer = true;
+			}
+			break;
+
+		case GLFW_KEY_KP_0:
+			if (key == GLFW_KEY_KP_0 && setupPlayer) {
+
+				b2Vec2 force = decomposeVector(90.0f, 3000.0f);
+				player->ApplyLinearImpulse(force, player->GetWorldCenter(), true);
+
+			}
+			break;
+
+		case GLFW_KEY_KP_6:
+			if (key == GLFW_KEY_KP_6 && setupPlayer) {
+
+				b2Vec2 force = decomposeVector(0.0f, 500.0f);
+				player->ApplyLinearImpulse(force, player->GetWorldCenter(), true);
+
+			}
+			break;
+
+		case GLFW_KEY_KP_4:
+			if (key == GLFW_KEY_KP_4 && setupPlayer) {
+
+				b2Vec2 force = decomposeVector(135.0f, 500.0f);
+				player->ApplyLinearImpulseToCenter(force, true);
+
+			}
+			break;
+
 		}
 
 
-
-
 	}
+
 
 };
 
 //Aqui fazemos o registro do novo teste 
 static int testIndex = RegisterTest("Examples", "MyTest", MyTest::Create);
+
+
+b2Vec2 decomposeVector(float angleDeg, float magnitude) 
+{
+	b2Vec2 decomposed;
+
+	decomposed.x = magnitude * cos(degToRad(angleDeg));
+	decomposed.y = magnitude * sin(degToRad(angleDeg));
+	return decomposed;
+}
+
+
+float degToRad(float angleDeg)
+{
+	return angleDeg * b2_pi / 180.0f;
+}
